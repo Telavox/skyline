@@ -23,6 +23,9 @@ metric: information about the anomaly itself
 def alert_smtp(alert, metric):
 
     # For backwards compatibility
+    server = settings.SMTP_OPTS['server']
+    port = settings.SMTP_OPTS['port']
+    
     if '@' in alert[1]:
         sender = settings.ALERT_SENDER
         recipient = alert[1]
@@ -42,7 +45,7 @@ def alert_smtp(alert, metric):
         link = settings.GRAPH_URL % (metric[1])
         body = 'Anomalous value: %s <br> Next alert in: %s seconds <a href="%s"><img src="%s"/></a>' % (metric[0], alert[2], link, link)
         msg.attach(MIMEText(body, 'html'))
-        s = SMTP('127.0.0.1')
+        s = SMTP(server, port)
         s.sendmail(sender, recipient, msg.as_string())
         s.quit()
 

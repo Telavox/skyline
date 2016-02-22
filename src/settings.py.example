@@ -51,6 +51,10 @@ OCULUS_HOST = 'http://your_oculus_host.com'
 Analyzer settings
 """
 
+STATSD_HOST = 'statsd.service.com'
+STATSD_PORT = 8125
+STATSD_prefix = 'counters.statsd'
+
 # This is the location the Skyline agent will write the anomalies file to disk.
 # It needs to be in a location accessible to the webapp.
 ANOMALY_DUMP = 'webapp/static/dump/anomalies.json'

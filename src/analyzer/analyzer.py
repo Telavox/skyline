@@ -17,6 +17,7 @@ import settings
 from alerters import trigger_alert
 from algorithms import run_selected_algorithm
 from algorithm_exceptions import *
+from statsd_client import StatsdClient
 
 logger = logging.getLogger("AnalyzerLog")
 
@@ -34,6 +35,9 @@ class Analyzer(Thread):
         self.anomalous_metrics = Manager().list()
         self.exceptions_q = Queue()
         self.anomaly_breakdown_q = Queue()
+        if settings.STATSD_HOST != '':
+            self.statsdClient = StatsdClient(settings.STATSD_HOST, settings.STATSD_PORT)
+            logger.info('Will use StatsD at {0}:{1} with prefix {2}'.format(settings.STATSD_HOST, settings.STATSD_PORT, settings.STATSD_PREFIX))
 
     def check_if_parent_is_alive(self):
         """
@@ -219,6 +223,15 @@ class Analyzer(Thread):
             logger.info('total anomalies   :: %d' % len(self.anomalous_metrics))
             logger.info('exception stats   :: %s' % exceptions)
             logger.info('anomaly breakdown :: %s' % anomaly_breakdown)
+
+            if self.statsdClient is not None:
+                self.statsdClient.count("{0}.total.metrics".format(settings.STATSD_PREFIX), len(unique_metrics))
+                self.statsdClient.count("{0}.total.analyzed".format(settings.STATSD_PREFIX), (len(unique_metrics) - sum(exceptions.values())))
+                self.statsdClient.count("{0}.total.anomalies".format(settings.STATSD_PREFIX), len(self.anomalous_metrics))
+                for key, value in anomaly_breakdown.iteritems():
+                    self.statsdClient.count("{0}.anomaly_breakdown.{1}".format(settings.STATSD_PREFIX, key), value)
+                for key, value in exceptions.iteritems():
+                    self.statsdClient.count("{0}.exceptions.{1}".format(settings.STATSD_PREFIX, key), value)
 
             # Log to Graphite
             self.send_graphite_metric('skyline.analyzer.run_time', '%.2f' % (time() - now))

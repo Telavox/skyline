@@ -1,4 +1,5 @@
 import logging
+import traceback
 from Queue import Empty
 from redis import StrictRedis
 from time import time, sleep
@@ -201,6 +202,7 @@ class Analyzer(Thread):
 
                             except Exception as e:
                                 logger.error("couldn't send alert: %s" % e)
+                                logger.error("stacktrace: %s" % str(traceback.format_exc()))
 
             # Write anomalous_metrics to static webapp directory
             filename = path.abspath(path.join(path.dirname(__file__), '..', settings.ANOMALY_DUMP))
